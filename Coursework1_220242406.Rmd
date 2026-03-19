@@ -1,0 +1,129 @@
+---
+title: "MTH6139 Time Series" 
+subtitle: "Forecasting of Bitcoin Searches Over Time." 
+author: "Zayan Afzal" 
+date: "Spring term 2026" 
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: spacelab 
+    highlight: tango
+---
+ 
+```{r, echo=FALSE}
+# This code will display the QMUL logo at the top right of the page
+# Do not change this code
+htmltools::img(src = knitr::image_uri("images/QMlogo.png"),
+               alt = 'logo',
+               style = 'position:absolute; top:0; right:0; padding:10px; width:20%;')
+```
+
+# Introduction
+In this project, Google trends search data for Bitcoin is analysed as a time series. The aim is to explore the behaviour of this series and to use prophet to forecast future search interest.
+
+One important thing to note is the Google Trends data is normalised on a scale of 0 to 100, where 100 represents the peak level of search interest in that time period meaning the values reflect relative rather than absolute search volume.
+
+# Loading the Dataset
+```{r, message=FALSE, warning=FALSE}
+library(prophet)
+data = read.csv("BitcoinTimeSeries.csv")
+```
+
+
+# Setting up the Dataframe
+```{r}
+bitcoin = data.frame(
+    ds = as.Date(data$Time, format="%d/%m/%Y"),
+    y = data$Bitcoin
+)
+```
+In this code I am setting the original Time column of the data set into the correct format for R and renaming it ds. I am also renaming the Bitcoin column as y. This creates the dataframe for prophet.
+
+
+
+# Plotting the Time Series
+```{r}
+plot(bitcoin$ds, bitcoin$y,
+     type="l",
+     xaxt="n",
+     xlab="Year",
+     ylab="Search Interest",
+     main="Google Search Trends for Bitcoin")
+
+
+axis.Date(1,
+          at=seq(min(bitcoin$ds),
+                 max(bitcoin$ds),
+                 by="1 year"),
+          format="%Y")
+```
+
+The plot shows the substantial change in Google Search Interest for Bitcoin over time. The interest is relatively low in 2015 and you can see a very big spike in 2017 and then falling back later. There is another period of strong interest around 2021. The graph shows us the volatility of public attention towards Bitcoin. The spikes in interest coincide with periods in which Bitcoin prices were rising fast, which indicates a relationship between market behaviour and search activity. However, it is important to note this may not be the sole reason for the increase in searches as there could be external factors such as media coverage.
+
+
+# Forecasting and Plotting with Prophet
+```{r, message = FALSE, warning = FALSE}
+model = prophet(bitcoin)
+future = make_future_dataframe(model,
+                               periods=12,
+                               freq="month")
+forecast = predict(model, future)
+plot(model, forecast)
+```
+
+
+In this section the Prophet model is fitted to the Bitcoin Time Series. A future dataframe is then created with 12 monthly periods allowing the model to forecast for the year ahead. I chose 12 as we usually cover time series which increment every month in lectures.
+
+The predict() function returns the estimated values for both the observed and future periods of the time series and then plots the resulting forecast. 
+
+The black points represents the data from the Google Trends dataset while the blue line shows the fitted values and the forecast produced by the Prophet Model. The shaded region shows the uncertainty interval around the forecast. 
+
+This model captures the expected overall upward trend in search interest for Bitcoin over time as it is well known that public interest in cryptocurrency in general has increased over time, and will continue to do so. 
+
+However, the model fails to fully capture the extreme spikes we saw in out data from 2017 and 2021. This is expected as these spikes were driven from events not included in our dataset, such as the sudden increase in Bitcoin price during those time periods.
+
+Generally, the forecast suggests the searches for bitcoin will continue to fluctuate in the future but will follow a broadly increasing trend.
+
+# Trend and Seasonality Analysis
+```{r}
+prophet_plot_components(model, forecast)
+```
+
+For some further analysis we can break the series down into trend and seasonal components. The trend component shows a clear increase from 2015 onwards, which indicates the overall interest in Bitcoin has grown over time. This is an conclusion as it is clear cryptocurrecies have become increasingly during the period covered by the time series and will continue to do so.
+
+Contrary to the trend, the seasonal component of the time series does not display a strong or consistent repeating pattern. While there are fluctuations, they do not follow a clear cycle, which suggests seasonality is weak in this dataset. Again, this indicates search interest is more than likely driven by external events, rather than predictable seasonal effects. 
+
+
+
+# Conclusion
+
+Overall, the analysis shows that Bitcoin Search Interest has increased over time, with the most notable spikes during periods of extreme price fluctuation. While the Prophet model captures the general upward trend, the seasonal component appears relatively weak. This again links to  Bitcoin search trends being driven by external factors rather than consistent yearly patterns. The model provides a somewhat reasonable forecast of future trends, although sudden changes remain difficult to predict. 
+
+This highlights a limitation of the model as it cannot fully account for unpredictable external effects on it. This limitation could be improved by incorporating additional explanatory variables, such as Bitcoin prices or market indicators, allowing the model to better account for external factors influencing search behaviour.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+![](images/QMlogo.png)
+
+
+
+
+
+
