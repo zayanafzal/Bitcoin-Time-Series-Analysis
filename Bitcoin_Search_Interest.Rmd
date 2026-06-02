@@ -1,0 +1,894 @@
+---
+title: "Forecasting Bitcoin Search Interest"
+author: "Zayan Afzal"
+date: "`r format(Sys.Date(), '%B %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 2
+    theme: lumen
+    highlight: textmate
+    code_folding: hide
+    code_download: true
+    df_print: paged
+---
+
+<style>
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+  color: #233142;
+  background: linear-gradient(180deg, #f6fbff 0%, #ffffff 260px);
+}
+
+.main-container {
+  max-width: 1020px;
+  margin-left: auto;
+  margin-right: auto;
+  background: #ffffff;
+  padding: 38px 48px;
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(45, 87, 122, 0.10);
+}
+
+h1.title {
+  font-size: 40px;
+  font-weight: 800;
+  color: #1d3557;
+  margin-top: 15px;
+  margin-bottom: 8px;
+  letter-spacing: -0.4px;
+}
+
+.author, .date {
+  color: #6c7a89;
+  font-size: 15px;
+}
+
+h1 {
+  font-size: 27px;
+  font-weight: 750;
+  color: #1d3557;
+  margin-top: 48px;
+  padding-bottom: 8px;
+  border-bottom: 3px solid #dbeafe;
+}
+
+h2 {
+  font-size: 21px;
+  font-weight: 700;
+  color: #274c77;
+  margin-top: 34px;
+}
+
+h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #334e68;
+}
+
+p {
+  margin-bottom: 15px;
+}
+
+ul {
+  margin-bottom: 18px;
+}
+
+/* Standard tables */
+table {
+  width: 100%;
+  margin-top: 18px;
+  margin-bottom: 26px;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  background: #ffffff;
+}
+
+caption {
+  caption-side: top;
+  text-align: left;
+  color: #274c77;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+th {
+  background-color: #eaf4ff;
+  color: #1d3557;
+  font-weight: 700;
+  border-bottom: 1px solid #bfd7ed;
+}
+
+td, th {
+  padding: 9px 11px;
+  border-bottom: 1px solid #e6edf5;
+}
+
+/* Cleaner table wrapper */
+.clean-table {
+  margin: 22px 0 30px 0;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(45, 87, 122, 0.06);
+}
+
+.clean-table table {
+  margin: 0;
+}
+
+.clean-table caption {
+  padding: 12px 14px;
+  background: #f5faff;
+  margin-bottom: 0;
+}
+
+.clean-table th {
+  background: #eaf4ff;
+}
+
+/* Metric cards */
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin: 22px 0 28px 0;
+}
+
+.metric-card {
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 16px 18px;
+  box-shadow: 0 4px 14px rgba(45, 87, 122, 0.07);
+}
+
+.metric-label {
+  color: #6c7a89;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 6px;
+}
+
+.metric-value {
+  color: #1d3557;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+/* Code */
+pre {
+  background-color: #f8fbff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+}
+
+code {
+  color: #1d3557;
+  background-color: #eef6ff;
+  border-radius: 4px;
+}
+
+.btn {
+  border-radius: 999px !important;
+  border: 1px solid #bfd7ed !important;
+  background: #eaf4ff !important;
+  color: #1d3557 !important;
+  font-weight: 600 !important;
+  padding: 5px 14px !important;
+  box-shadow: none !important;
+}
+
+.btn:hover {
+  background: #dbeafe !important;
+  color: #0f2a43 !important;
+}
+
+button.code-folding-btn,
+button[data-toggle="collapse"] {
+  border-radius: 999px !important;
+  background: #eaf4ff !important;
+  color: #1d3557 !important;
+  border: 1px solid #bfd7ed !important;
+  font-weight: 600 !important;
+}
+
+.code-label {
+  font-size: 13.5px;
+  font-weight: 650;
+  color: #46627f;
+  background: #f4f9ff;
+  border: 1px solid #dbeafe;
+  border-left: 4px solid #5dade2;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+
+/* Plots */
+img {
+  border-radius: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+/* Table of contents */
+.tocify {
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #ffffff;
+}
+
+.tocify .active {
+  background-color: #dbeafe !important;
+  color: #1d3557 !important;
+  font-weight: 700;
+}
+
+/* Callout boxes */
+.takeaway {
+  background: #f5faff;
+  border: 1px solid #dbeafe;
+  border-left: 5px solid #5dade2;
+  padding: 15px 18px;
+  margin: 22px 0;
+  border-radius: 10px;
+}
+
+.method {
+  background: #f8fbf8;
+  border: 1px solid #d8ead8;
+  border-left: 5px solid #6abf69;
+  padding: 15px 18px;
+  margin: 22px 0;
+  border-radius: 10px;
+}
+
+.caution {
+  background: #fffaf0;
+  border: 1px solid #fde7bd;
+  border-left: 5px solid #f4b860;
+  padding: 15px 18px;
+  margin: 22px 0;
+  border-radius: 10px;
+}
+
+.model-box {
+  background: #faf5ff;
+  border: 1px solid #eadcff;
+  border-left: 5px solid #9b5de5;
+  padding: 15px 18px;
+  margin: 22px 0;
+  border-radius: 10px;
+}
+</style>
+
+```{r setup, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(lubridate)
+library(forecast)
+library(tseries)
+library(knitr)
+library(htmltools)
+
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  fig.align = "center",
+  fig.width = 9.5,
+  fig.height = 5.2
+)
+
+plot_theme <- theme_minimal(base_size = 13) +
+  theme(
+    plot.title = element_text(face = "bold", size = 16, color = "#1d3557"),
+    plot.subtitle = element_text(size = 11, color = "#6c7a89"),
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_line(color = "#e6edf5"),
+    axis.title = element_text(color = "#334e68"),
+    axis.text = element_text(color = "#4b6478")
+  )
+```
+
+# 1. Introduction
+
+This project analyses monthly Google search interest for Bitcoin as a time series. The aim is to investigate whether public interest in Bitcoin contains enough structure to support short-term forecasting.
+
+Bitcoin search interest is not likely to behave like a stable economic or demographic series. Public attention can change quickly when Bitcoin appears in the news, when prices rise or fall sharply, or when cryptocurrency becomes part of wider market discussion. Because of this, the project is not only about producing a forecast, but also about testing how reliable that forecast is.
+
+The analysis uses decomposition, stationarity testing, benchmark models, ETS models and SARIMA models. Models are compared using a train-test split, so the final judgement is based on performance on unseen data rather than visual fit.
+
+<div class="takeaway">
+<strong>Project focus:</strong> The main question is whether Bitcoin search interest behaves like a forecastable time series, or whether it is too event-driven for classical models to predict reliably.
+</div>
+
+# 2. Data
+
+The dataset contains monthly Bitcoin search interest values. The values are relative Google Trends scores, so they do not represent exact search volumes. A higher value means Bitcoin had higher search interest during that month.
+
+<div class="code-label">Code: load the Bitcoin search interest dataset</div>
+
+```{r data-loading, results='hide'}
+bitcoin_raw <- read.csv("BitcoinTimeSeries.csv")
+```
+
+The original columns are renamed to make the analysis easier to read. The date column is also converted into a proper date format so that R can treat it as a monthly time series.
+
+<div class="code-label">Code: clean the date column and prepare the search interest series</div>
+
+```{r data-cleaning, results='hide'}
+bitcoin <- bitcoin_raw %>%
+  rename(
+    date = Time,
+    value = Bitcoin
+  )
+
+bitcoin$date <- as.Date(bitcoin$date, format = "%d/%m/%Y")
+
+bitcoin <- bitcoin %>%
+  filter(!is.na(date), !is.na(value)) %>%
+  arrange(date)
+
+start_date <- min(bitcoin$date)
+end_date <- max(bitcoin$date)
+n_obs <- nrow(bitcoin)
+min_value <- min(bitcoin$value)
+max_value <- max(bitcoin$value)
+```
+
+After cleaning, the dataset runs from `r start_date` to `r end_date`, with `r n_obs` monthly observations. Search interest ranges from `r min_value` to `r max_value`.
+
+The data is monthly, so it is converted into a time series object with frequency 12. This tells R that the data has 12 observations per year.
+
+<div class="code-label">Code: convert the cleaned data into a monthly time series object</div>
+
+```{r time-series-object, results='hide'}
+btc_ts <- ts(
+  bitcoin$value,
+  frequency = 12,
+  start = c(year(min(bitcoin$date)), month(min(bitcoin$date)))
+)
+
+ts_frequency <- frequency(btc_ts)
+ts_observations <- length(btc_ts)
+ts_start <- paste(start(btc_ts), collapse = "-")
+ts_end <- paste(end(btc_ts), collapse = "-")
+```
+
+```{r time-series-cards, echo=FALSE, results='asis'}
+HTML(paste0(
+  '<div class="metric-grid">',
+    '<div class="metric-card">',
+      '<div class="metric-label">Frequency</div>',
+      '<div class="metric-value">', ts_frequency, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Observations</div>',
+      '<div class="metric-value">', ts_observations, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Start</div>',
+      '<div class="metric-value">', ts_start, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">End</div>',
+      '<div class="metric-value">', ts_end, '</div>',
+    '</div>',
+  '</div>'
+))
+```
+
+# 3. Exploratory analysis
+
+The first step is to inspect the overall shape of the series.
+
+<div class="code-label">Code: plot monthly Bitcoin search interest over time</div>
+
+```{r exploratory-plot}
+ggplot(bitcoin, aes(x = date, y = value)) +
+  geom_line(linewidth = 0.8, colour = "#1d3557") +
+  labs(
+    title = "Bitcoin search interest over time",
+    subtitle = "Monthly relative Google Trends score",
+    x = "Date",
+    y = "Search interest"
+  ) +
+  plot_theme +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+The plot shows that search interest is not stable over time. There are several sharp spikes, which is expected for Bitcoin because public attention often increases suddenly around price movements, news events or wider market discussion.
+
+<div class="code-label">Code: calculate summary statistics for the search interest series</div>
+
+```{r summary-statistics, results='hide'}
+summary_stats <- bitcoin %>%
+  summarise(
+    observations = n(),
+    mean_value = round(mean(value), 2),
+    median_value = round(median(value), 2),
+    sd_value = round(sd(value), 2),
+    minimum_value = min(value),
+    maximum_value = max(value)
+  )
+
+obs_value <- summary_stats$observations
+mean_value <- summary_stats$mean_value
+median_value <- summary_stats$median_value
+sd_value <- summary_stats$sd_value
+minimum_value <- summary_stats$minimum_value
+maximum_value <- summary_stats$maximum_value
+```
+
+```{r summary-statistics-cards, echo=FALSE, results='asis'}
+HTML(paste0(
+  '<div class="metric-grid">',
+    '<div class="metric-card">',
+      '<div class="metric-label">Observations</div>',
+      '<div class="metric-value">', obs_value, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Mean</div>',
+      '<div class="metric-value">', mean_value, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Median</div>',
+      '<div class="metric-value">', median_value, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Standard deviation</div>',
+      '<div class="metric-value">', sd_value, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Minimum</div>',
+      '<div class="metric-value">', minimum_value, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Maximum</div>',
+      '<div class="metric-value">', maximum_value, '</div>',
+    '</div>',
+  '</div>'
+))
+```
+
+The gap between the median and the maximum suggests that the series is not evenly spread around a typical level. Instead, there are occasional periods where search interest becomes much higher than usual.
+
+<div class="takeaway">
+<strong>Initial observation:</strong> Bitcoin search interest appears volatile and spike-driven. A model that assumes a smooth stable pattern is unlikely to be enough by itself.
+</div>
+
+# 4. Decomposition
+
+STL decomposition separates the series into trend, seasonal and remainder components. This helps show whether the movement in the series is mainly long-term trend, repeated seasonality or irregular shocks.
+
+<div class="code-label">Code: decompose the series into trend, seasonality and remainder</div>
+
+```{r decomposition, fig.height=7}
+decomp <- stl(btc_ts, s.window = "periodic")
+plot(decomp)
+```
+
+The trend component shows longer-term movement in Bitcoin interest. The seasonal component shows repeated monthly effects. The remainder shows irregular movements that are not explained by the trend or seasonality.
+
+For this dataset, the remainder is important because Bitcoin search interest is strongly affected by events. This means that even if there is some trend or seasonality, sudden shocks can still dominate the series.
+
+<div class="method">
+<strong>Method note:</strong> Decomposition is not a forecasting model by itself. It is used to understand the structure of the series before fitting models.
+</div>
+
+# 5. Stationarity
+
+ARIMA-type models usually work better when the series is stationary. A stationary series has statistical properties that are reasonably stable over time. The original plot suggests that Bitcoin search interest may not be stationary, so the Augmented Dickey-Fuller test is used.
+
+<div class="code-label">Code: run ADF stationarity tests before and after differencing</div>
+
+<div class="clean-table">
+
+```{r adf-tests}
+adf_original <- adf.test(btc_ts)
+
+diff_btc <- diff(btc_ts)
+adf_differenced <- adf.test(diff_btc)
+
+adf_table <- data.frame(
+  Series = c("Original series", "Differenced series"),
+  `ADF statistic` = c(
+    round(as.numeric(adf_original$statistic), 4),
+    round(as.numeric(adf_differenced$statistic), 4)
+  ),
+  `p-value` = c(
+    round(adf_original$p.value, 4),
+    round(adf_differenced$p.value, 4)
+  )
+)
+
+kable(adf_table, caption = "ADF stationarity tests")
+```
+
+</div>
+
+A lower p-value gives stronger evidence against a unit root. The differenced series is included because differencing is a common way to reduce changes in level and make a series more suitable for ARIMA modelling.
+
+<div class="code-label">Code: plot the differenced series</div>
+
+```{r differenced-plot}
+autoplot(diff_btc) +
+  labs(
+    title = "Differenced Bitcoin search interest",
+    x = "Time",
+    y = "Change in search interest"
+  ) +
+  plot_theme
+```
+
+<div class="method">
+<strong>Modelling point:</strong> Differencing changes the problem slightly. Instead of only modelling the level of search interest, the model also focuses on how search interest changes from one month to the next.
+</div>
+
+# 6. Autocorrelation
+
+The ACF and PACF plots help assess whether past values are related to current values. This matters because time series models rely on the idea that the past contains information about the future.
+
+<div class="code-label">Code: plot ACF and PACF for the differenced series</div>
+
+```{r acf-pacf}
+acf(diff_btc, main = "ACF of differenced series")
+pacf(diff_btc, main = "PACF of differenced series")
+```
+
+The ACF shows correlation with previous lags, while the PACF shows the correlation at each lag after accounting for shorter lags. These plots are not used to manually choose the final model, but they are useful as a check before using automatic ARIMA selection.
+
+# 7. Train-test split
+
+To avoid judging models only on how well they fit the past, the final 12 observations are held back as a test set.
+
+<div class="code-label">Code: split the series into training and test sets</div>
+
+```{r train-test-split, results='hide'}
+n <- length(btc_ts)
+
+train <- window(btc_ts, end = time(btc_ts)[n - 12])
+test <- window(btc_ts, start = time(btc_ts)[n - 11])
+
+train_obs <- length(train)
+test_obs <- length(test)
+```
+
+```{r train-test-cards, echo=FALSE, results='asis'}
+HTML(paste0(
+  '<div class="metric-grid">',
+    '<div class="metric-card">',
+      '<div class="metric-label">Training set</div>',
+      '<div class="metric-value">', train_obs, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Test set</div>',
+      '<div class="metric-value">', test_obs, '</div>',
+    '</div>',
+  '</div>'
+))
+```
+
+<div class="method">
+<strong>Why this matters:</strong> A train-test split gives a more honest comparison. A model can fit historical data well but still perform badly on future observations.
+</div>
+
+# 8. Benchmark models
+
+Before fitting ETS and SARIMA models, simple benchmark models are used. These are important because a more complicated model is not automatically better. It should improve on simple alternatives.
+
+The mean forecast is a simple long-term average. The naive forecast assumes the latest observation is the best guide to the near future. The seasonal naive forecast tests whether the same month in the previous year is useful for prediction.
+
+<div class="code-label">Code: fit mean, naive and seasonal naive benchmark forecasts</div>
+
+<div class="clean-table">
+
+```{r benchmark-models}
+mean_fit <- meanf(train, h = length(test))
+naive_fit <- naive(train, h = length(test))
+snaive_fit <- snaive(train, h = length(test))
+
+benchmark_table <- data.frame(
+  Model = c("Mean forecast", "Naive forecast", "Seasonal naive forecast"),
+  Idea = c(
+    "Future values are forecast using the training-set average.",
+    "Future values are forecast using the most recent observation.",
+    "Future values repeat the value from the same month in the previous year."
+  )
+)
+
+kable(benchmark_table, caption = "Benchmark models")
+```
+
+</div>
+
+<div class="code-label">Code: plot benchmark forecasts over the test horizon</div>
+
+```{r benchmark-plots}
+autoplot(mean_fit) +
+  labs(title = "Mean forecast", x = "Time", y = "Search interest") +
+  plot_theme
+
+autoplot(naive_fit) +
+  labs(title = "Naive forecast", x = "Time", y = "Search interest") +
+  plot_theme
+
+autoplot(snaive_fit) +
+  labs(title = "Seasonal naive forecast", x = "Time", y = "Search interest") +
+  plot_theme
+```
+
+<div class="takeaway">
+<strong>Benchmark purpose:</strong> If ETS or SARIMA cannot beat these simple models on unseen data, then the extra complexity is not adding much value.
+</div>
+
+# 9. ETS model
+
+<div class="model-box">
+<strong>ETS model:</strong> ETS stands for Error, Trend and Seasonality. It is based on exponential smoothing, meaning it gives more weight to recent observations while still using the history of the series.
+</div>
+
+ETS models are useful when the level, trend or seasonal pattern of a series changes over time. In this project, ETS is worth testing because Bitcoin search interest does not appear stable across the full period.
+
+<div class="code-label">Code: fit the ETS model and generate forecasts</div>
+
+```{r ets-model, results='hide'}
+ets_fit <- ets(train)
+ets_forecast <- forecast(ets_fit, h = length(test))
+```
+
+<div class="code-label">Code: create a clean ETS model summary table</div>
+
+<div class="clean-table">
+
+```{r ets-model-table}
+ets_table <- data.frame(
+  Model = as.character(ets_fit$method),
+  AIC = round(ets_fit$aic, 2),
+  AICc = round(ets_fit$aicc, 2),
+  BIC = round(ets_fit$bic, 2)
+)
+
+kable(ets_table, caption = "ETS model summary")
+```
+
+</div>
+
+<div class="code-label">Code: plot ETS forecast against the test period</div>
+
+```{r ets-plot}
+autoplot(ets_forecast) +
+  labs(
+    title = "ETS forecast",
+    subtitle = "Forecast over the 12-month test period",
+    x = "Time",
+    y = "Search interest"
+  ) +
+  plot_theme
+```
+
+The forecast line gives the model's central estimate. The shaded intervals show uncertainty. Wider intervals mean the model is less confident about future values.
+
+# 10. SARIMA model
+
+<div class="model-box">
+<strong>SARIMA model:</strong> SARIMA is a seasonal version of ARIMA, which stands for AutoRegressive Integrated Moving Average.
+</div>
+
+The autoregressive part uses past values of the series. The integrated part means the model can difference the series to handle non-stationarity. The moving-average part uses past forecast errors. The seasonal part allows the model to capture patterns that repeat every 12 months.
+
+<div class="code-label">Code: fit the SARIMA model and generate forecasts</div>
+
+```{r sarima-model, results='hide'}
+arima_fit <- auto.arima(train, seasonal = TRUE)
+arima_forecast <- forecast(arima_fit, h = length(test))
+```
+
+<div class="code-label">Code: create a clean SARIMA model summary table</div>
+
+<div class="clean-table">
+
+```{r sarima-model-table}
+sarima_table <- data.frame(
+  Model = as.character(arima_fit),
+  AIC = round(AIC(arima_fit), 2),
+  AICc = round(arima_fit$aicc, 2),
+  BIC = round(BIC(arima_fit), 2)
+)
+
+kable(sarima_table, caption = "SARIMA model summary")
+```
+
+</div>
+
+<div class="code-label">Code: plot SARIMA forecast against the test period</div>
+
+```{r sarima-plot}
+autoplot(arima_forecast) +
+  labs(
+    title = "SARIMA forecast",
+    subtitle = "Forecast over the 12-month test period",
+    x = "Time",
+    y = "Search interest"
+  ) +
+  plot_theme
+```
+
+A SARIMA model written as `ARIMA(p,d,q)(P,D,Q)[12]` means that `p`, `d` and `q` are the non-seasonal terms, while `P`, `D` and `Q` are the seasonal terms. The `[12]` appears because the data is monthly.
+
+# 11. Forecast comparison
+
+The models are compared on the test set using RMSE, MAE and MAPE.
+
+RMSE penalises large errors more heavily. MAE gives the average absolute error. MAPE expresses the error as a percentage.
+
+<div class="code-label">Code: calculate out-of-sample accuracy for all models</div>
+
+<div class="clean-table">
+
+```{r accuracy-table}
+mean_accuracy <- accuracy(mean_fit, test)
+naive_accuracy <- accuracy(naive_fit, test)
+snaive_accuracy <- accuracy(snaive_fit, test)
+ets_accuracy <- accuracy(ets_forecast, test)
+arima_accuracy <- accuracy(arima_forecast, test)
+
+accuracy_table <- rbind(
+  Mean = mean_accuracy[2, c("RMSE", "MAE", "MAPE")],
+  Naive = naive_accuracy[2, c("RMSE", "MAE", "MAPE")],
+  Seasonal_Naive = snaive_accuracy[2, c("RMSE", "MAE", "MAPE")],
+  ETS = ets_accuracy[2, c("RMSE", "MAE", "MAPE")],
+  SARIMA = arima_accuracy[2, c("RMSE", "MAE", "MAPE")]
+)
+
+accuracy_table <- round(as.data.frame(accuracy_table), 3)
+
+kable(accuracy_table, caption = "Out-of-sample forecast accuracy")
+```
+
+</div>
+
+<div class="code-label">Code: identify the best model using RMSE</div>
+
+```{r best-model-selection, results='hide'}
+best_model_name <- rownames(accuracy_table)[which.min(accuracy_table$RMSE)]
+best_rmse <- min(accuracy_table$RMSE)
+```
+
+```{r best-model-cards, echo=FALSE, results='asis'}
+HTML(paste0(
+  '<div class="metric-grid">',
+    '<div class="metric-card">',
+      '<div class="metric-label">Best model by RMSE</div>',
+      '<div class="metric-value">', best_model_name, '</div>',
+    '</div>',
+    '<div class="metric-card">',
+      '<div class="metric-label">Lowest RMSE</div>',
+      '<div class="metric-value">', best_rmse, '</div>',
+    '</div>',
+  '</div>'
+))
+```
+
+<div class="takeaway">
+<strong>Model selection:</strong> The best model is selected using out-of-sample performance, not visual fit. This tests whether the model can generalise beyond the data it was trained on.
+</div>
+
+# 12. Residual diagnostics
+
+A model should not leave behind obvious patterns in the residuals. If residuals still show autocorrelation, then the model has not captured all of the time series structure.
+
+<div class="code-label">Code: run Ljung-Box residual autocorrelation tests</div>
+
+<div class="clean-table">
+
+```{r residual-tests-table}
+arima_lb <- Box.test(residuals(arima_fit), lag = 12, type = "Ljung-Box")
+ets_lb <- Box.test(residuals(ets_fit), lag = 12, type = "Ljung-Box")
+
+residual_table <- data.frame(
+  Model = c("ETS", "SARIMA"),
+  `Ljung-Box statistic` = c(
+    round(as.numeric(ets_lb$statistic), 3),
+    round(as.numeric(arima_lb$statistic), 3)
+  ),
+  `p-value` = c(
+    round(ets_lb$p.value, 4),
+    round(arima_lb$p.value, 4)
+  )
+)
+
+kable(residual_table, caption = "Residual autocorrelation diagnostics")
+```
+
+</div>
+
+The Ljung-Box test checks whether residual autocorrelation remains. A high p-value suggests there is no strong evidence of remaining autocorrelation. A low p-value suggests the model may still be missing some structure.
+
+<div class="code-label">Code: plot SARIMA residual diagnostics</div>
+
+```{r residual-diagnostics-arima, fig.height=6.5, results='hide'}
+checkresiduals(arima_fit)
+```
+
+<div class="code-label">Code: plot ETS residual diagnostics</div>
+
+```{r residual-diagnostics-ets, fig.height=6.5, results='hide'}
+checkresiduals(ets_fit)
+```
+
+# 13. Final forecast
+
+After comparing the models, the SARIMA model is refitted on the full dataset and used to produce a 12-month forecast. The train-test split was used for model evaluation; once that is complete, the final model can use all available observations.
+
+<div class="code-label">Code: refit SARIMA using the full dataset and forecast 12 months ahead</div>
+
+```{r final-model, results='hide'}
+final_model <- auto.arima(btc_ts, seasonal = TRUE)
+final_forecast <- forecast(final_model, h = 12)
+```
+
+<div class="code-label">Code: create final model summary table</div>
+
+<div class="clean-table">
+
+```{r final-model-table}
+final_table <- data.frame(
+  Model = as.character(final_model),
+  AIC = round(AIC(final_model), 2),
+  AICc = round(final_model$aicc, 2),
+  BIC = round(BIC(final_model), 2)
+)
+
+kable(final_table, caption = "Final model fitted on full dataset")
+```
+
+</div>
+
+<div class="code-label">Code: plot the final 12-month forecast</div>
+
+```{r final-forecast-plot}
+autoplot(final_forecast) +
+  labs(
+    title = "Final 12-month forecast for Bitcoin search interest",
+    subtitle = "SARIMA model refitted using the full dataset",
+    x = "Time",
+    y = "Search interest"
+  ) +
+  plot_theme
+```
+
+<div class="caution">
+<strong>Forecast interpretation:</strong> This forecast should not be treated as a precise prediction. Bitcoin search interest is strongly affected by news, price movements and market sentiment. The forecast is best understood as a model-based estimate assuming future behaviour is similar to past patterns.
+</div>
+
+# 14. Limitations and possible extensions
+
+There are several limitations to this project.
+
+First, Google Trends gives relative search interest rather than the actual number of searches. Second, this is a univariate analysis, so the models only use past search interest. They do not include Bitcoin price, trading volume, market volatility, news sentiment or macroeconomic variables.
+
+This matters because Bitcoin attention is likely driven by external factors. A large price movement or major news story could change search interest very quickly, and a model based only on past search interest may not react until after the movement has already happened.
+
+Possible extensions include:
+
+- adding Bitcoin price as an external regressor;
+- testing an ARIMAX model;
+- comparing the results with Prophet;
+- using rolling-window cross-validation;
+- including news or social media sentiment;
+- modelling search interest and price together.
+
+# 15. Conclusion
+
+This project shows that Bitcoin search interest is volatile, uneven and strongly affected by spikes in public attention. The decomposition and stationarity analysis suggest that the series is not a simple stable process.
+
+The model comparison shows why benchmarks are important. A more complicated model is only useful if it improves on simple methods when tested on unseen data. ETS and SARIMA provide more structured approaches, but their usefulness depends on whether they actually reduce forecast error on the test set.
+
+Overall, classical time series models can capture some of the structure in Bitcoin search interest, but there are clear limits. The series is partly predictable from its own history, but it is also heavily influenced by external events. A stronger future version of this project would include explanatory variables such as Bitcoin price, trading volume and news sentiment.
